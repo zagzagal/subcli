@@ -32,7 +32,7 @@ type HelpTopic struct {
 type Action interface {
 	// Exec should proform the function taking all arguments after the
 	// Sub command. Does no type checking, or varification
-	Exec([]string)
+	Exec()
 }
 
 // SubCli is the housing struct for subcli
@@ -41,4 +41,5 @@ type SubCli struct {
 	subs   []SubCommand
 	help   []SubCommand
 	Output io.Writer
+	Args   []string
 }

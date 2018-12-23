@@ -17,6 +17,7 @@ func New(p Program) *SubCli {
 		subs:    *new([]SubCommand),
 		help:    *new([]SubCommand),
 		Output:  os.Stderr,
+		Args:    os.Args,
 	}
 	s.AddCmd(SubCommand{
 		Command: "version",
@@ -45,6 +46,7 @@ func (s subCommands) Less(i, j int) bool {
 
 // AddCmd adds a new SubCommand
 func (s *SubCli) AddCmd(c SubCommand) {
+	c.Flags = flag.NewFlagSet(c.Command, flag.ExitOnError)
 	c.Flags.SetOutput(s.Output)
 	s.subs = append(s.subs, c)
 	sort.Sort(subCommands(s.subs))
@@ -67,22 +69,14 @@ func (s *SubCli) AddHelp(h HelpTopic) {
 // SubCommands and HelpTopics are defined. Help, and version sub commands are
 // automatically added
 func (s SubCli) Parse(arguments []string) {
-	cmd, args := argParse(arguments)
-	s.cmdTree(cmd, args)
-}
-
-func argParse(a []string) (string, []string) {
-	l := len(a)
-	switch {
-	case l == 0:
-		return "", nil
-	case l == 1:
-		return a[0], nil
+	if len(arguments) == 0 {
+		s.cmdTree("")
+	} else {
+		s.cmdTree(arguments[0])
 	}
-	return a[0], a[1:]
 }
 
-func (s SubCli) cmdTree(cmd string, args []string) {
+func (s SubCli) cmdTree(cmd string) {
 	// version builtin
 	if cmd == "version" {
 		s.cmdVersion()
@@ -91,18 +85,23 @@ func (s SubCli) cmdTree(cmd string, args []string) {
 
 	// help builtin
 	if cmd == "help" || cmd == "" {
-		s.cmdHelp(args)
+		if len(os.Args) > 3 {
+			s.cmdHelp(os.Args[3:])
+		} else {
+			s.cmdHelp(nil)
+		}
 		return
 	}
 
 	// Check all the subs
 	for _, v := range s.subs {
 		if v.Command == cmd {
-			err := v.Flags.Parse(args[2:])
+			err := v.Flags.Parse(os.Args[2:])
 			if err != nil {
 				s.println(err)
 			}
-			v.Cmd(args)
+			s.Args = v.Flags.Args()
+			v.Cmd(v.Flags.Args())
 			return
 		}
 	}
@@ -207,6 +206,10 @@ func helpformated(s string) string {
 
 var commandLine = New(Program{Name: os.Args[0], Version: "", SDesc: ""})
 
+func SetProgram(p Program) {
+	commandLine.Program = p
+}
+
 // AddCmd adds a subcommand to the system
 func AddCmd(c SubCommand) {
 	commandLine.AddCmd(c)
@@ -221,4 +224,8 @@ func AddHelp(h HelpTopic) {
 // subcommands, help topics, and flags are defined and before they are accessed.
 func Parse() {
 	commandLine.Parse(os.Args[1:])
+}
+
+func Args() []string {
+	return commandLine.Args
 }
