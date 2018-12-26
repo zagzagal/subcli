@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"sync"
 )
 
 // New is the SubCli constructor function
@@ -18,6 +19,8 @@ func New(p Program) *SubCli {
 		help:    *new([]SubCommand),
 		Output:  os.Stderr,
 		Args:    os.Args,
+		data:    new(sync.Map),
+		parsed:  false,
 	}
 	s.AddCmd(SubCommand{
 		Command: "version",
@@ -69,6 +72,7 @@ func (s *SubCli) AddHelp(h HelpTopic) {
 // SubCommands and HelpTopics are defined. Help, and version sub commands are
 // automatically added
 func (s SubCli) Parse(arguments []string) {
+	s.parsed = true
 	if len(arguments) == 0 {
 		s.cmdTree("")
 	} else {
@@ -175,6 +179,19 @@ func (s SubCli) printHelp() {
 	)
 }
 
+// Store stores a string in a keystore. The keystore is thread safe and cann't be written after parse.
+func (s SubCli) Store(key, value string) {
+	if !s.parsed {
+		s.data.Store(key, value)
+	}
+}
+
+// Load retreves a string from keystore. The keystore is thread safe.
+func (s SubCli) Load(key string) (string, bool) {
+	v, ok := s.data.Load(key)
+	return v.(string), ok
+}
+
 // print is a private function for redirecting output
 func (s SubCli) print(a ...interface{}) {
 	_, err := fmt.Fprint(s.Output, a...)
@@ -218,6 +235,16 @@ func AddCmd(c SubCommand) {
 // AddHelp adds a help topic to the system
 func AddHelp(h HelpTopic) {
 	commandLine.AddHelp(h)
+}
+
+// Store puts a string in a keystore
+func Store(key, value string) {
+	commandLine.Store(key, value)
+}
+
+// Load retreves a string from a keystore
+func Load(key string) (string, bool) {
+	return commandLine.Load(key)
 }
 
 // Parse parses the command-line from os.Args[1:]. Must be called after all

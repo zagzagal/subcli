@@ -63,34 +63,3 @@ func TestSubLess(t *testing.T) {
 	}
 
 }
-
-func TestArgParse(t *testing.T) {
-	data := []struct {
-		a     []string
-		eCmd  string
-		eArgs []string
-	}{
-		{[]string{"0", "1", "2"}, "0", []string{"1", "2"}},
-		{[]string{}, "", nil},
-		{[]string{"0"}, "0", nil},
-		{[]string{"0", "1"}, "0", []string{"1"}},
-		{[]string{"0", "1", "2", "3"}, "0", []string{"1", "2", "3"}},
-	}
-	for _, tt := range data {
-		aCmd, aArgs := argParse(tt.a)
-		if aCmd != tt.eCmd {
-			t.Errorf("argparse(%v): expected %s got %s",
-				tt.a,
-				tt.eCmd,
-				aCmd,
-			)
-		}
-		if !compare(aArgs, tt.eArgs) {
-			t.Errorf("argparse(%v): expected %v got %v",
-				tt.a,
-				tt.eArgs,
-				aArgs,
-			)
-		}
-	}
-}

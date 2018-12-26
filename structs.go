@@ -3,6 +3,7 @@ package subcli
 import (
 	"flag"
 	"io"
+	"sync"
 )
 
 // Program is the overhead info on the software
@@ -42,4 +43,6 @@ type SubCli struct {
 	help   []SubCommand
 	Output io.Writer
 	Args   []string
+	data   *sync.Map
+	parsed bool
 }
